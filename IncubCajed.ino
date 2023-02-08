@@ -75,8 +75,11 @@ void control_leds(){
 
 void control_buzzer(){
   if(tempe > 38.4 || tempe < 30){
-      digitalWrite(BUZZER, HIGH);
-  }
+    if((millis()-temp_buzzer) >= 1500){
+      digitalWrite(BUZZER, state_buz);      
+      temp_buzzer = millis();
+      state_buz = !state_buz;
+    }  }
 
   else{ 
       digitalWrite(BUZZER, LOW);
