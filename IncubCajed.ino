@@ -1,4 +1,5 @@
 #include <Wire.h>
+#include <avr/wdt.h>  // add a watch_dog librairie 
 #include "dht.h"
 #include "lcd.h"
 
@@ -11,7 +12,11 @@
 #define BUZZER 6
 #define RELAIS_RES 5
 
+bool state_buz= true;
+bool state_Led = true;
+
 void setup() {
+  wdt_enable(WDTO_4S); //initialisation du chien de garde a 8 secondes
   lcd_tempe.init(); // initialisation de l'afficheur
   Wire.begin(); //initialisation de la voie i2c
   Serial.begin(9600);
@@ -27,16 +32,19 @@ void setup() {
   temp_lcd = millis();
   temp_RedLed = millis();
   temp_buzzer = millis();
+  wdt_reset(); // remise a zero du compteur de watch dog avant la boucle principale: loop()
  }
 
 void loop() {
-  if((millis()- temp_lcd) >= 1000){
+if((millis()- temp_lcd) >= 1000){
       readDHT( DHT_PIN, &tempe, &humidy ); // mise ajour de la temperature
       affichage();
-      Serial.println(tempe);
       temp_lcd = millis();
-  }
+ }
   control_temperature();
+  control_leds();
+  control_buzzer();
+  wdt_reset(); // remise a zero du compteur de watch dog avant la boucle principale: loop()
 }
 
 
@@ -46,25 +54,13 @@ void control_temperature(){
    digitalWrite(RELAIS_RES, HIGH);
   }
 
-  else if(tempe > 37.8){
+  if(tempe > 37.8){
    digitalWrite(RELAIS_RES, LOW);
   }
-
-control_leds_T(); //affichages sur les leds
 }
 
 
-void control_humidity(){
-  
-  if(humidy < 45){
-  }
-
-  else if(humidy > 55){
-  }  
-}
-
-
-void control_leds_T(){
+void control_leds(){
 
   if((tempe > 36) && (tempe < 38.5)){
     digitalWrite(RED_LED_T, LOW);
@@ -73,19 +69,21 @@ void control_leds_T(){
 
   else{
     digitalWrite(GREEN_LED_T, LOW);
-    if((millis()- temp_RedLed) >= 1000){
-      state_redLed = !state_redLed;
-      digitalWrite(RED_LED_T, state_redLed);
+    if((millis()- temp_RedLed) >= 1500){
+      digitalWrite(RED_LED_T, state_Led);      
       temp_RedLed = millis();
+      state_Led = !state_Led;
     }
   }
-
 }
 
 void control_buzzer(){
-  if(tempe > 38.4){
-      digitalWrite(BUZZER, HIGH);
-  }
+  if(tempe > 38.4 || tempe < 30){
+    if((millis()-temp_buzzer) >= 1500){
+      digitalWrite(BUZZER, state_buz);      
+      temp_buzzer = millis();
+      state_buz = !state_buz;
+    }  }
 
   else{ 
       digitalWrite(BUZZER, LOW);
