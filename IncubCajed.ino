@@ -1,4 +1,5 @@
 #include <Wire.h>
+#include <avr/wdt.h>  // add a watch_dog librairie 
 #include "dht.h"
 #include "lcd.h"
 
@@ -15,6 +16,7 @@ bool state_buz= true;
 bool state_Led = true;
 
 void setup() {
+  wdt_enable(WDTO_4S); //initialisation du chien de garde a 8 secondes
   lcd_tempe.init(); // initialisation de l'afficheur
   Wire.begin(); //initialisation de la voie i2c
   Serial.begin(9600);
@@ -30,6 +32,7 @@ void setup() {
   temp_lcd = millis();
   temp_RedLed = millis();
   temp_buzzer = millis();
+  wdt_reset(); // remise a zero du compteur de watch dog avant la boucle principale: loop()
  }
 
 void loop() {
@@ -41,6 +44,7 @@ if((millis()- temp_lcd) >= 1000){
   control_temperature();
   control_leds();
   control_buzzer();
+  wdt_reset(); // remise a zero du compteur de watch dog avant la boucle principale: loop()
 }
 
 
